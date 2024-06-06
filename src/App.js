@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import Backend_url from './constant'; // Define your backend URL in a separate file
+const Backend_url = 'https://gserver5.onrender.com'; // Update to your backend URL
 
 const App = () => {
     const [accessToken, setAccessToken] = useState('');
