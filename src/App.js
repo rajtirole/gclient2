@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+
 const Backend_url = 'https://gserver5.onrender.com'; // Update to your backend URL
 
 const App = () => {
@@ -18,17 +19,25 @@ const App = () => {
     }, []);
 
     const fetchReviews = async (token) => {
-        const response = await axios.get(`${Backend_url}/reviews?access_token=${token}`);
-        setReviews(response.data.reviews);
+        try {
+            const response = await axios.get(`${Backend_url}/reviews?access_token=${token}`);
+            setReviews(response.data.reviews);
+        } catch (error) {
+            console.error('Error fetching reviews:', error);
+        }
     };
 
     const publishResponse = async () => {
-        await axios.post(`${Backend_url}/publish`, {
-            accessToken,
-            reviewId: selectedReviewId,
-            responseText
-        });
-        fetchReviews(accessToken);
+        try {
+            await axios.post(`${Backend_url}/publish`, {
+                accessToken,
+                reviewId: selectedReviewId,
+                responseText
+            });
+            fetchReviews(accessToken);
+        } catch (error) {
+            console.error('Error publishing response:', error);
+        }
     };
 
     const handleLogin = () => {
