@@ -1,82 +1,64 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+const Backend_url = 'https://gserver5.onrender.com'; // Update to your backend URL
 
-const app = express();
+const App = () => {
+    const [accessToken, setAccessToken] = useState('');
+    const [reviews, setReviews] = useState([]);
+    const [responseText, setResponseText] = useState('');
+    const [selectedReviewId, setSelectedReviewId] = useState('');
 
-// Use cors middleware
-app.use(cors({
-    origin: 'https://gclient2.onrender.com', // Update this to your frontend URL
-    methods: 'GET,POST,PUT,DELETE',
-    allowedHeaders: 'Content-Type,Authorization'
-}));
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('access_token');
+        if (token) {
+            setAccessToken(token);
+            fetchReviews(token);
+        }
+    }, []);
 
-app.use(bodyParser.json());
+    const fetchReviews = async (token) => {
+        const response = await axios.get(`${Backend_url}/reviews?access_token=${token}`);
+        setReviews(response.data.reviews);
+    };
 
-const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = process.env.REDIRECT_URI;
-const ACCOUNT_ID = process.env.ACCOUNT_ID;
-const LOCATION_ID = process.env.LOCATION_ID;
-
-app.get('/login', (req, res) => {
-    const authUri = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=https://www.googleapis.com/auth/business.manage`;
-    res.redirect(authUri);
-});
-
-app.get('/oauth2callback', async (req, res) => {
-    const code = req.query.code;
-    try {
-        const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
-            client_id: CLIENT_ID,
-            client_secret: CLIENT_SECRET,
-            code,
-            grant_type: 'authorization_code',
-            redirect_uri: REDIRECT_URI
+    const publishResponse = async () => {
+        await axios.post(`${Backend_url}/publish`, {
+            accessToken,
+            reviewId: selectedReviewId,
+            responseText
         });
-        const accessToken = tokenResponse.data.access_token;
-        res.redirect(`${REDIRECT_URI}?access_token=${accessToken}`);
-    } catch (error) {
-        console.error('Error getting access token:', error);
-        res.status(500).send('Error getting access token');
-    }
-});
+        fetchReviews(accessToken);
+    };
 
-app.get('/reviews', async (req, res) => {
-    const accessToken = req.query.access_token;
-    const accountName = `accounts/${ACCOUNT_ID}`;
-    const locationName = `locations/${LOCATION_ID}`;
-    try {
-        const reviewsResponse = await axios.get(`https://mybusiness.googleapis.com/v4/${accountName}/${locationName}/reviews`, {
-            headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        res.json(reviewsResponse.data);
-    } catch (error) {
-        console.error('Error fetching reviews:', error);
-        res.status(500).send('Error fetching reviews');
-    }
-});
+    const handleLogin = () => {
+        window.location.href = `${Backend_url}/login`;
+    };
 
-app.post('/publish', async (req, res) => {
-    const { accessToken, reviewId, responseText } = req.body;
-    const accountName = `accounts/${ACCOUNT_ID}`;
-    const locationName = `locations/${LOCATION_ID}`;
-    try {
-        const publishResponse = await axios.put(`https://mybusiness.googleapis.com/v4/${accountName}/${locationName}/reviews/${reviewId}/reply`, {
-            comment: responseText
-        }, {
-            headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        res.json(publishResponse.data);
-    } catch (error) {
-        console.error('Error publishing response:', error);
-        res.status(500).send('Error publishing response');
-    }
-});
+    return (
+        <div>
+            <h1>Reviews Dashboard</h1>
+            {!accessToken && (
+                <button onClick={handleLogin}>Login with Google</button>
+            )}
+            {reviews.length > 0 && (
+                <div>
+                    {reviews.map((review) => (
+                        <div key={review.reviewId}>
+                            <p>{review.comment}</p>
+                            <button onClick={() => setSelectedReviewId(review.reviewId)}>Respond</button>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {selectedReviewId && (
+                <div>
+                    <textarea value={responseText} onChange={(e) => setResponseText(e.target.value)}></textarea>
+                    <button onClick={publishResponse}>Publish</button>
+                </div>
+            )}
+        </div>
+    );
+};
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+export default App;
