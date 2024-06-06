@@ -8,6 +8,7 @@ const App = () => {
     const [reviews, setReviews] = useState([]);
     const [responseText, setResponseText] = useState('');
     const [selectedReviewId, setSelectedReviewId] = useState('');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -15,6 +16,8 @@ const App = () => {
         if (token) {
             setAccessToken(token);
             fetchReviews(token);
+        } else {
+            setLoading(false);
         }
     }, []);
 
@@ -22,8 +25,10 @@ const App = () => {
         try {
             const response = await axios.get(`${Backend_url}/reviews?access_token=${token}`);
             setReviews(response.data.reviews);
+            setLoading(false);
         } catch (error) {
             console.error('Error fetching reviews:', error);
+            setLoading(false);
         }
     };
 
@@ -43,6 +48,10 @@ const App = () => {
     const handleLogin = () => {
         window.location.href = `${Backend_url}/login`;
     };
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div>
