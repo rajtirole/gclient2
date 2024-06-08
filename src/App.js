@@ -1,8 +1,8 @@
 // App.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-const Backend_url = 'http://localhost:5000'; // Update to your backend URL
+import Backend_url from './constant'
+// const Backend_url = 'http://localhost:5000'; // Update to your backend URL
 
 const App = () => {
     const [accessToken, setAccessToken] = useState('');
